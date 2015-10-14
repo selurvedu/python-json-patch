@@ -42,6 +42,8 @@ import itertools
 import json
 import sys
 
+import jsondiff
+
 try:
     from collections.abc import MutableMapping, MutableSequence
 except ImportError:
@@ -168,7 +170,7 @@ def make_patch(src, dst):
     >>> new == dst
     True
     """
-    return JsonPatch.from_diff(src, dst)
+    return JsonPatch(jsondiff.make(src, dst))
 
 
 class JsonPatch(object):
