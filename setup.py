@@ -19,6 +19,7 @@ PACKAGE = 'jsonpatch'
 
 MODULES = (
         'jsonpatch',
+        'jsondiff',
 )
 
 REQUIREMENTS = list(open('requirements.txt'))
