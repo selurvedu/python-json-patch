@@ -53,7 +53,7 @@ from jsonpointer import JsonPointer, JsonPointerException
 
 # Will be parsed by setup.py to determine package metadata
 __author__ = 'Stefan Kögl <stefan@skoegl.net>'
-__version__ = '1.12+jsondiff.0'
+__version__ = '1.13+jsondiff.0'
 __website__ = 'https://github.com/stefankoegl/python-json-patch'
 __license__ = 'Modified BSD License'
 
@@ -486,6 +486,10 @@ class MoveOperation(PatchOperation):
         except (KeyError, IndexError) as ex:
             raise JsonPatchConflict(str(ex))
 
+        # If source and target are equal, this is a no-op
+        if self.pointer == from_ptr:
+            return obj
+
         if isinstance(subobj, MutableMapping) and \
                 self.pointer.contains(from_ptr):
             raise JsonPatchConflict('Cannot move values into its own children')
@@ -758,11 +762,18 @@ def _optimize(operations):
 
 
 def _optimize_using_replace(prev, cur):
-    """Optimises JSON patch by using ``replace`` operation instead of
-    ``remove`` and ``add`` against the same path."""
+    """Optimises by replacing ``add``/``remove`` with ``replace`` on same path
+
+    For nested strucures, tries to recurse replacement, see #36 """
     prev['op'] = 'replace'
     if cur['op'] == 'add':
-        prev['value'] = cur['value']
+        # make recursive patch
+        patch = make_patch(prev['value'], cur['value'])
+        if len(patch.patch) == 1:
+            prev['path'] = prev['path'] + patch.patch[0]['path']
+            prev['value'] = patch.patch[0]['value']
+        else:
+            prev['value'] = cur['value']
 
 
 def _optimize_using_move(prev_item, item):
